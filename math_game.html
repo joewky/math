@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小一至小三奧數分級挑戰賽 🏆</title>
+  
+  <!-- Tailwind CSS & Google Fonts & Font Awesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Canvas Confetti for Celebration Effects -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Noto Sans TC', 'Fredoka', sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 40%, #fef3c7 100%);
+      min-height: 100vh;
+      user-select: none;
+    }
+
+    /* Floating ambient math items */
+    .floating-item {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0.15;
+      animation: floatAnim 8s ease-in-out infinite alternate;
+    }
+    @keyframes floatAnim {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-18px) rotate(8deg); }
+      100% { transform: translateY(0px) rotate(-8deg); }
+    }
+
+    /* Glassmorphism Card Style */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), inset 0 2px 4px rgba(255, 255, 255, 0.8);
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      border-radius: 2rem;
+    }
+
+    /* Interactive Button Bounce Effect */
+    .btn-bounce {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .btn-bounce:hover {
+      transform: scale(1.05) translateY(-2px);
+    }
+    .btn-bounce:active {
+      transform: scale(0.96) translateY(1px);
+    }
+
+    /* Shake animation for wrong submission */
+    .shake {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+
+    /* Pulsing level badge glow */
+    .badge-glow {
+      box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.6); }
+      50% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.9); }
+    }
+
+    /* Scale up modal animation */
+    .modal-enter {
+      animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes modalPop {
+      0% { opacity: 0; transform: scale(0.7); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 flex flex-col items-center justify-center relative overflow-x-hidden min-h-screen">
+
+  <div class="floating-item text-5xl text-blue-400 top-8 left-8"><i class="fa-solid fa-plus"></i></div>
+  <div class="floating-item text-6xl text-amber-400 top-1/4 right-10" style="animation-delay: -2s;"><i class="fa-solid fa-star"></i></div>
+  <div class="floating-item text-6xl text-emerald-300 bottom-16 left-12" style="animation-delay: -4s;"><i class="fa-solid fa-shapes"></i></div>
+  <div class="floating-item text-5xl text-purple-300 bottom-10 right-16" style="animation-delay: -1s;"><i class="fa-solid fa-divide"></i></div>
+  <div class="floating-item text-4xl text-rose-300 top-1/2 left-6" style="animation-delay: -3s;"><i class="fa-solid fa-xmark"></i></div>
+
+  <div class="w-full max-w-4xl glass-card p-4 sm:p-8 relative z-10 my-2 shadow-2xl">
+
+    <!-- Top Header Banner -->
+    <div class="relative rounded-2xl overflow-hidden mb-6 p-4 sm:p-6 text-white text-center shadow-lg bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600">
+      
+      <div class="flex items-center justify-between mb-2">
+        <span class="bg-amber-400 text-amber-950 font-black px-3 py-1 rounded-full text-xs sm:text-sm tracking-wide shadow-md flex items-center gap-1.5">
+          <i class="fa-solid fa-graduation-cap"></i> 小一至小三奧數
+        </span>
+        
+        <!-- Teacher Mode Toggle -->
+        <button onclick="toggleTeacherMode()" class="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-md transition flex items-center gap-1.5 font-bold border border-white/30">
+          <i class="fa-solid fa-user-shield"></i> <span id="teacherBtnText">教師專區</span>
+        </button>
+      </div>
+
+      <h1 class="text-2xl sm:text-4xl font-black tracking-tight drop-shadow-md flex items-center justify-center gap-2">
+        <span>🧩 奧數小勇士分級挑戰賽 🌟</span>
+      </h1>
+      <p class="text-xs sm:text-sm opacity-90 mt-1 font-medium">答錯有引導提示，可無限制補答！動動腦筋衝向最高級吧！</p>
+    </div>
+
+    <div class="bg-white/90 rounded-2xl p-4 mb-6 border border-sky-100 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <div class="flex items-center gap-2">
+          <span id="levelBadge" class="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black bg-emerald-500 text-white shadow">
+            🌱 初級：初心冒險家
+          </span>
+          <span class="text-gray-500 font-bold text-xs sm:text-sm" id="questionNumText">第 1 / 20 題</span>
+        </div>
+
+        <div class="flex items-center gap-4 text-xs sm:text-sm font-bold text-gray-700">
+          <div class="flex items-center gap-1 text-amber-500 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+            <i class="fa-solid fa-star text-base"></i>
+            <span>得分：<span id="scoreText" class="text-lg font-black">0</span></span>
+          </div>
+          <div class="flex items-center gap-1 text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+            <i class="fa-solid fa-fire text-base text-orange-500"></i>
+            <span>連勝：<span id="streakText" class="text-lg font-black">0</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-gray-200 h-3.5 sm:h-4 rounded-full overflow-hidden p-0.5 shadow-inner">
+        <div id="progressBar" class="bg-gradient-to-r from-sky-400 via-emerald-400 to-amber-400 h-full rounded-full transition-all duration-500" style="width: 5%;"></div>
+      </div>
+    </div>
+
+    <div id="quizContainer">
+      
+      <!-- Question Card -->
+      <div class="bg-white rounded-2xl p-5 sm:p-8 border-2 border-sky-100 shadow-md relative overflow-hidden transition-all duration-300" id="questionBox">
+        
+        <!-- Question Category Header -->
+        <div class="flex items-center justify-between gap-2 mb-4">
+          <span id="categoryTag" class="bg-sky-100 text-sky-800 text-xs sm:text-sm font-bold px-3 py-1 rounded-lg border border-sky-200 flex items-center gap-1.5">
+            【初級：找規律】
+          </span>
+          <div id="avatarBadge" class="w-10 h-10 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-amber-600 text-lg shadow-sm">
+            <i class="fa-solid fa-lightbulb"></i>
+          </div>
+        </div>
+
+        <!-- Question Body -->
+        <div id="questionText" class="text-base sm:text-xl font-bold text-gray-800 leading-relaxed mb-6">
+          題目載入中...
+        </div>
+
+        <!-- Custom Visual Diagrams (SVG / Math layout) -->
+        <div id="visualGraphicArea" class="mb-6 hidden flex justify-center items-center bg-gradient-to-b from-sky-50 to-indigo-50/40 rounded-xl p-4 border border-sky-100">
+          <!-- Dynamic SVG content will be injected here -->
+        </div>
+
+        <!-- Answer Input Section -->
+        <div class="space-y-4">
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="text" id="answerInput" placeholder="請在此輸入你的答案..." autocomplete="off"
+                   class="flex-1 px-4 py-3.5 text-lg font-bold text-gray-800 bg-gray-50 border-2 border-gray-300 rounded-xl focus:border-sky-500 focus:bg-white focus:outline-none transition shadow-inner">
+            
+            <button onclick="checkAnswer()" id="submitBtn" 
+                    class="btn-bounce bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-7 py-3.5 rounded-xl shadow-lg hover:shadow-emerald-200 flex items-center justify-center gap-2 text-base">
+              <i class="fa-solid fa-paper-plane"></i> 提交答案
+            </button>
+          </div>
+
+          <!-- Hint & Retry Actions -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100">
+            <button onclick="showHint()" id="hintBtn" class="btn-bounce bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-4 py-2 rounded-xl text-xs sm:text-sm border border-amber-300 flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> 小貼士提示
+            </button>
+
+            <span id="retryNotice" class="text-xs text-purple-600 font-bold hidden flex items-center gap-1 animate-pulse">
+              <i class="fa-solid fa-arrows-rotate"></i> 答錯沒關係，請參考小貼士再次補答！
+            </span>
+          </div>
+        </div>
+
+        <!-- Hint Content Box -->
+        <div id="hintBox" class="mt-4 p-4 bg-amber-50 rounded-xl border-2 border-amber-200 text-amber-900 text-sm sm:text-base hidden shadow-inner">
+          <div class="font-bold mb-1 text-amber-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-lightbulb text-amber-500 text-lg"></i> 解題小貼士：
+          </div>
+          <p id="hintText" class="leading-relaxed">點擊「小貼士」獲得提示。</p>
+        </div>
+
+        <!-- Teacher Reference Box -->
+        <div id="teacherAnswerBox" class="mt-4 p-3 bg-slate-100 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-700 font-mono hidden">
+          🔒 [教師專區備課模式] 參考答案庫：<span id="teacherAnswerText" class="font-bold text-rose-600">--</span>
+        </div>
+
+      </div>
+
+      <!-- Feedback Area -->
+      <div id="feedbackBox" class="mt-4 p-4 rounded-2xl text-center font-bold text-base sm:text-lg hidden border-2 transition-all">
+        <div id="feedbackMsg"></div>
+        <button id="nextBtn" onclick="nextQuestion()" class="btn-bounce mt-3 bg-sky-600 hover:bg-sky-700 text-white text-sm px-6 py-2.5 rounded-xl shadow inline-flex items-center gap-2">
+          下一題 <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <div id="victoryScreen" class="hidden text-center py-8">
+      <div class="text-6xl sm:text-7xl mb-4 animate-bounce">🏆</div>
+      <h2 class="text-3xl sm:text-4xl font-black text-amber-500 mb-2">🎉 恭喜完成全部奧數考驗！</h2>
+      <p class="text-gray-600 text-base mb-6 font-medium">你展現了超凡的邏輯推理與解題智慧！</p>
+      
+      <div class="bg-gradient-to-b from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-6 max-w-md mx-auto mb-6 shadow-md">
+        <div class="text-sm text-gray-500 mb-1 font-bold">最終榮譽結算</div>
+        <div class="text-4xl font-black text-amber-600 mb-2"><span id="finalScore">0</span> 分</div>
+        <div id="honorTitle" class="text-lg font-bold text-emerald-800 bg-emerald-100 py-1.5 px-5 rounded-full inline-block border border-emerald-300">
+          🏅 榮獲：奧數小宗師
+        </div>
+      </div>
+
+      <button onclick="restartGame()" class="btn-bounce bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold text-lg px-8 py-3.5 rounded-2xl shadow-lg">
+        <i class="fa-solid fa-rotate-right"></i> 重新挑戰遊戲
+      </button>
+    </div>
+
+  </div>
+
+  <div id="levelModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center border-4 border-amber-300 shadow-2xl modal-enter relative">
+      <div class="text-6xl mb-3" id="modalEmoji">🚀</div>
+      <h3 class="text-2xl sm:text-3xl font-black text-gray-800 mb-2" id="modalTitle">升級到中級！</h3>
+      <p class="text-gray-600 font-medium mb-6 leading-relaxed" id="modalDesc">你已成功掌握初級奧數技巧，準備迎戰難度更上一層樓的中級題目！</p>
+      <button onclick="closeLevelModal()" class="btn-bounce bg-gradient-to-r from-amber-400 to-orange-500 text-white font-black text-lg px-8 py-3 rounded-2xl shadow-lg w-full">
+        接受挑戰！ <i class="fa-solid fa-bolt"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Audio synthesizer using Web Audio API
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'correct') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(170, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } else if (type === 'hint') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1046.5, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+      } else if (type === 'levelup') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
+      }
+    }
+
+    const questions = [
+      // === 初級 (Q1 - Q6) ===
+      {
+        id: 1,
+        level: "🌱 初級：初心冒險家",
+        category: "【初級：找規律】",
+        question: "觀察下面數字的變化規律，請問問號 <b>?</b> 處應該填入什麼數字？<br><span class='text-2xl text-sky-600 font-black tracking-wider block mt-2'>2, 4, 7, 11, 16, ?</span>",
+        hint: "看看相鄰兩個數字之間的「距離」：+2, +3, +4... 下一個要加多少呢？",
+        answers: ["22"],
+        graphic: `<div class="flex items-center gap-1.5 sm:gap-2 text-base sm:text-xl font-bold text-sky-700 flex-wrap justify-center">
+                    <span class="bg-white border-2 border-sky-300 px-3 py-1 rounded-lg shadow-sm">2</span><span class="text-xs text-amber-600 font-black">+2➔</span>
+                    <span class="bg-white border-2 border-sky-300 px-3 py-1 rounded-lg shadow-sm">4</span><span class="text-xs text-amber-600 font-black">+3➔</span>
+                    <span class="bg-white border-2 border-sky-300 px-3 py-1 rounded-lg shadow-sm">7</span><span class="text-xs text-amber-600 font-black">+4➔</span>
+                    <span class="bg-white border-2 border-sky-300 px-3 py-1 rounded-lg shadow-sm">11</span><span class="text-xs text-amber-600 font-black">+5➔</span>
+                    <span class="bg-white border-2 border-sky-300 px-3 py-1 rounded-lg shadow-sm">16</span><span class="text-xs text-amber-600 font-black">+6➔</span>
+                    <span class="bg-amber-300 text-amber-950 px-3.5 py-1 rounded-lg border-2 border-amber-400 font-black shadow-sm">?</span>
+                  </div>`
+      },
+      {
+        id: 2,
+        level: "🌱 初級：初心冒險家",
+        category: "【初級：幾何計數】",
+        question: "下圖的 2×2 格子中，一共有多少個正方形？（包含大的和小的）",
+        hint: "除了 4 個小正方形，有沒有由 4 個小正方形拼成的「大正方形」？",
+        answers: ["5", "5個", "5 個"],
+        graphic: `<svg width="120" height="120" viewBox="0 0 120 120" class="mx-auto">
+                    <rect x="10" y="10" width="100" height="100" fill="none" stroke="#0284c7" stroke-width="4" rx="6"/>
+                    <line x1="60" y1="10" x2="60" y2="110" stroke="#0284c7" stroke-width="3"/>
+                    <line x1="10" y1="60" x2="110" y2="60" stroke="#0284c7" stroke-width="3"/>
+                  </svg>`
+      },
+      {
+        id: 3,
+        level: "🌱 初級：初心冒險家",
+        category: "【初級：排隊問題】",
+        question: "小明排隊買冰淇淋，從前面數他是第 5 個，從後面數他也是第 5 個。請問這隊一共有多少人在排隊？",
+        hint: "如果直接把 5+5 算出來，小明是不是被重複算了兩次呢？（小明前面有4人，後面有4人，加上小明自己）",
+        answers: ["9", "9人", "9人排隊", "9 人"],
+        graphic: `<div class="flex items-center justify-center gap-1.5 text-2xl">
+                    <span>👦</span><span>👧</span><span>👦</span><span>👧</span>
+                    <span class="bg-amber-200 border-2 border-amber-400 px-2 py-0.5 rounded-xl font-bold text-sm text-amber-900">⭐小明(第5)</span>
+                    <span>👧</span><span>👦</span><span>👧</span><span>👦</span>
+                  </div>`
+      },
+      {
+        id: 4,
+        level: "🌱 初級：初心冒險家",
+        category: "【初級：火柴謎題】",
+        question: "用火柴棒擺出了數字 <span class='text-2xl text-indigo-600 font-black'>6</span>，移動 1 根火柴棒能變成的最大數字是多少？",
+        hint: "試著把左下角那一根拿走，放到右上角會變成哪個數字？（6 拿走左下角變 5，補到右上角會變成 9！）",
+        answers: ["9"],
+        graphic: `<div class="text-center font-mono text-3xl font-black text-amber-600 bg-amber-50 px-4 py-2 rounded-xl border border-amber-200 inline-block">🔥 6 ➔ ?</div>`
+      },
+      {
+        id: 5,
+        level: "🌱 初級：初心冒險家",
+        category: "【初級：天平代換】",
+        question: "1 個蘋果的重量等於 2 個香蕉；1 個香蕉的重量等於 3 顆草莓。請問：1 個蘋果的重量等於幾顆草莓？",
+        hint: "把 1 個香蕉換成 3 顆草莓，那麼 2 個香蕉可以換成幾顆草莓呢？(3 + 3 = ?)",
+        answers: ["6", "6顆", "6 顆", "6個"],
+        graphic: `<div class="text-sm sm:text-base font-bold text-gray-700 space-y-1">
+                    <div>🍎 1 個蘋果 = 🍌🍌 2 個香蕉</div>
+                    <div>🍌 1 個香蕉 = 🍓🍓🍓 3 顆草莓</div>
+                  </div>`
+      },
+      {
+        id: 6,
+        level: "🌱 初級：初心冒險家",
+        category: "【初級：簡單和差】",
+        question: "哥哥和弟弟共有 10 支鉛筆，哥哥比弟弟多 2 支。請問哥哥有多少支鉛筆？",
+        hint: "先把多出的 2 支拿走，剩下 8 支平分給兩人（每人4支），再把 2 支還給哥哥！",
+        answers: ["6", "6支", "6 支"]
+      },
+
+      // === 中級 (Q7 - Q14) ===
+      {
+        id: 7,
+        level: "🌿 中級：智慧探險家",
+        category: "【中級：植樹問題】",
+        question: "在一條長 20 米的小路一側種樹，每隔 5 米種一棵樹（兩端都要種）。請問一共要種多少棵樹？",
+        hint: "20 米分成每 5 米一段，有 4 個間隔。兩端都種，樹會比間隔多 1 棵！(4 + 1 = ?)",
+        answers: ["5", "5棵", "5 棵"],
+        graphic: `<div class="text-emerald-700 font-bold text-sm">🌳---5米---🌳---5米---🌳---5米---🌳---5米---🌳</div>`
+      },
+      {
+        id: 8,
+        level: "🌿 中級：智慧探險家",
+        category: "【中級：數圖形】",
+        question: "下圖中一個大三角形中間拉了一條豎線，請問圖中一共可以找到幾個三角形？",
+        hint: "先數單獨的半個三角形（2個），再數包含全圖的大三角形（1個）。",
+        answers: ["3", "3個", "3 個"],
+        graphic: `<svg width="120" height="90" viewBox="0 0 120 90" class="mx-auto">
+                    <polygon points="60,10 10,80 110,80" fill="none" stroke="#059669" stroke-width="4"/>
+                    <line x1="60" y1="10" x2="60" y2="80" stroke="#d97706" stroke-width="3"/>
+                  </svg>`
+      },
+      {
+        id: 9,
+        level: "🌿 中級：智慧探險家",
+        category: "【中級：年齡邏輯】",
+        question: "小紅今年 8 歲，媽媽今年 34 歲。當小紅 15 歲時，媽媽是多少歲？",
+        hint: "小紅長大了 7 歲（15 - 8），媽媽是不是也會長大相同的歲數？(34 + 7 = ?)",
+        answers: ["41", "41歲", "41 歲"]
+      },
+      {
+        id: 10,
+        level: "🌿 中級：智慧探險家",
+        category: "【中級：雞兔同籠】",
+        question: "籠子裏有雞和兔子共 5 隻，牠們一共有 14 條腿。請問籠子裏有幾隻兔子？",
+        hint: "若 5 隻都是雞只有 10 條腿，少 4 條腿。每把一隻雞換成兔子增加 2 條腿，需要換幾隻？",
+        answers: ["2", "2隻", "2 隻"],
+        graphic: `<div class="text-base font-bold text-amber-800">🐔 雞有 2 條腿 | 🐰 兔子有 4 條腿</div>`
+      },
+      {
+        id: 11,
+        level: "🌿 中級：智慧探險家",
+        category: "【中級：代數代換】",
+        question: "在下面的算式中：<br><b>□ + □ + △ = 14</b><br><b>□ + △ = 10</b><br>請問 <b>□</b> 代表什麼數字？",
+        hint: "第一個算式比第二個算式多了一個 □，結果多了多少呢？(14 - 10 = ?)",
+        answers: ["4"]
+      },
+      {
+        id: 12,
+        level: "🌿 中級：智慧探險家",
+        category: "【中級：剪繩邏輯】",
+        question: "一根繩子對折 1 次後從中間剪一刀，請問這根繩子會被分成幾段？",
+        hint: "對折剪一刀會剪斷 2 根線段，形成 4 個端點，加上原來的 2 個端點共 3 段。",
+        answers: ["3", "3段", "3 段"]
+      },
+      {
+        id: 13,
+        level: "🌿 中級：智慧探險家",
+        category: "【中級：週期曆法】",
+        question: "今天是星期二，再過 10 天是星期幾？（請填數字 1-7，例如：5 代表星期五，7 代表星期日）",
+        hint: "10 天裡面有一個完整的 7 天（一星期），還多出 3 天。從星期二往後數 3 天！",
+        answers: ["5", "星期五"]
+      },
+      {
+        id: 14,
+        level: "🌿 中級：智慧探險家",
+        category: "【中級：重疊問題】",
+        question: "班上有 20 人參加了數學組，15 人參加了美術組，其中有 8 人兩樣都參加了。請問班上至少有多少人？",
+        hint: "20 + 15 = 35 人，但兩樣都參加的 8 人被算兩次了，記得扣掉重複的人數！(35 - 8 = ?)",
+        answers: ["27", "27人", "27 人"]
+      },
+
+      // === 高級 (Q15 - Q20) ===
+      {
+        id: 15,
+        level: "🔥 高級：奧數大師",
+        category: "【高級：還原倒推】",
+        question: "一盒糖果，小明第一次吃了一半，第二次又吃了剩下的一半，最後還剩 3 塊。請問這盒糖果原本有多少塊？",
+        hint: "倒著推算！剩 3 塊是第二次吃之前的一半（6塊），6塊又是最初的一半！(6 × 2 = ?)",
+        answers: ["12", "12塊", "12 塊"]
+      },
+      {
+        id: 16,
+        level: "🔥 高級：奧數大師",
+        category: "【高級：週期規律】",
+        question: "一串彩燈按「紅、黃、藍、綠」重複排列。請問第 27 盞彩燈是什麼顏色？（請填：紅 / 黃 / 藍 / 綠）",
+        hint: "每 4 盞燈一個循環。用 27 ÷ 4 = 6 餘 3，代表是循環裡的第 3 個顏色！",
+        answers: ["藍", "藍色"]
+      },
+      {
+        id: 17,
+        level: "🔥 高級：奧數大師",
+        category: "【高級：水箱和差】",
+        question: "甲、乙兩個水箱共裝水 30 公升。如果從甲倒 5 公升給乙，兩人水就一樣多。請問甲原本有幾公升水？",
+        hint: "甲給乙 5 公升後一樣多，說明甲原本比乙多 10 公升！( (30 + 10) ÷ 2 = ? )",
+        answers: ["20", "20公升", "20 公升"]
+      },
+      {
+        id: 18,
+        level: "🔥 高級：奧數大師",
+        category: "【高級：速算湊十】",
+        question: "請快速計算下面的算式：<br><span class='text-xl sm:text-2xl text-purple-700 font-black'>1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 = ?</span>",
+        hint: "試著頭尾湊成對：1+9=10, 2+8=10, 3+7=10, 4+6=10，再加上 5 和原本的 10！",
+        answers: ["55"]
+      },
+      {
+        id: 19,
+        level: "🔥 高級：奧數大師",
+        category: "【高級：綜合邏輯】",
+        question: "小紅說：「我不是第一名。」<br>小藍說：「我不是最後一名。」<br>小綠說：「小藍比小紅快到達終點。」<br>請問獲得第一名的是誰？（小紅 / 小藍 / 小綠）",
+        hint: "小藍比小紅快，且小藍不是最後一名；若小紅不是第一名，那麼第一名是？",
+        answers: ["小藍"]
+      },
+      {
+        id: 20,
+        level: "🔥 高級：奧數大師",
+        category: "【高級：抽屜原理】",
+        question: "口袋裏有 4 個紅球和 4 個藍球。閉著眼睛至少要摸出幾個球，才能保證一定有 2 個球顏色相同？",
+        hint: "最不順利時前 2 個球顏色不同（1紅1藍），第 3 個球無論是什麼顏色都會與前面其中一個同色！",
+        answers: ["3", "3個", "3 個", "3顆"]
+      }
+    ];
+
+    let currentIndex = 0;
+    let score = 0;
+    let streak = 0;
+    let isTeacherMode = false;
+
+    // Game initialization
+    function initGame() {
+      currentIndex = 0;
+      score = 0;
+      streak = 0;
+      document.getElementById('scoreText').innerText = score;
+      document.getElementById('streakText').innerText = streak;
+      document.getElementById('victoryScreen').classList.add('hidden');
+      document.getElementById('quizContainer').classList.remove('hidden');
+      loadQuestion();
+    }
+
+    // Load question content into UI
+    function loadQuestion() {
+      const q = questions[currentIndex];
+      
+      document.getElementById('categoryTag').innerHTML = q.category;
+      document.getElementById('levelBadge').innerText = q.level;
+      
+      const badge = document.getElementById('levelBadge');
+      if (currentIndex < 6) {
+        badge.className = "px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black bg-emerald-500 text-white shadow";
+      } else if (currentIndex < 14) {
+        badge.className = "px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black bg-sky-500 text-white shadow";
+      } else {
+        badge.className = "px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-black bg-purple-600 text-white shadow badge-glow";
+      }
+
+      document.getElementById('questionNumText').innerText = `第 ${currentIndex + 1} / ${questions.length} 題`;
+      document.getElementById('questionText').innerHTML = q.question;
+      
+      // Graphic area handling
+      const graphicArea = document.getElementById('visualGraphicArea');
+      if (q.graphic) {
+        graphicArea.innerHTML = q.graphic;
+        graphicArea.classList.remove('hidden');
+      } else {
+        graphicArea.classList.add('hidden');
+      }
+
+      // Reset inputs & hints
+      document.getElementById('answerInput').value = '';
+      document.getElementById('answerInput').focus();
+      document.getElementById('hintBox').classList.add('hidden');
+      document.getElementById('hintText').innerText = q.hint;
+      document.getElementById('feedbackBox').classList.add('hidden');
+      document.getElementById('retryNotice').classList.add('hidden');
+
+      // Update progress bar
+      const progressPercent = ((currentIndex + 1) / questions.length) * 100;
+      document.getElementById('progressBar').style.width = `${progressPercent}%`;
+
+      // Teacher answer key update
+      document.getElementById('teacherAnswerText').innerText = q.answers.join(' / ');
+      if (isTeacherMode) {
+        document.getElementById('teacherAnswerBox').classList.remove('hidden');
+      } else {
+        document.getElementById('teacherAnswerBox').classList.add('hidden');
+      }
+    }
+
+    // Check student answer
+    function checkAnswer() {
+      const userAns = document.getElementById('answerInput').value.trim().toLowerCase();
+      if (!userAns) return;
+
+      const q = questions[currentIndex];
+      const isCorrect = q.answers.some(ans => {
+        const cleanAns = ans.trim().toLowerCase();
+        return userAns === cleanAns || userAns.replace(/\s+/g, '') === cleanAns.replace(/\s+/g, '');
+      });
+
+      const feedbackBox = document.getElementById('feedbackBox');
+      const feedbackMsg = document.getElementById('feedbackMsg');
+      const questionBox = document.getElementById('questionBox');
+
+      if (isCorrect) {
+        // Correct submission handling
+        playSound('correct');
+        score += 10;
+        streak += 1;
+        document.getElementById('scoreText').innerText = score;
+        document.getElementById('streakText').innerText = streak;
+
+        // Confetti effect
+        confetti({
+          particleCount: 45,
+          spread: 60,
+          origin: { y: 0.7 }
+        });
+
+        feedbackBox.className = "mt-4 p-4 rounded-2xl text-center font-bold text-base sm:text-lg border-2 bg-emerald-50 border-emerald-300 text-emerald-800 animate-fade-in";
+        feedbackMsg.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 text-2xl mb-1"></i><br>🎉 太棒了！回答正確！`;
+        feedbackBox.classList.remove('hidden');
+        document.getElementById('nextBtn').classList.remove('hidden');
+        document.getElementById('retryNotice').classList.add('hidden');
+
+      } else {
+        // Wrong submission handling: STRICT RULE - DO NOT SHOW ANSWER, PROMPT RETRY
+        playSound('wrong');
+        streak = 0;
+        document.getElementById('streakText').innerText = streak;
+
+        questionBox.classList.add('shake');
+        setTimeout(() => questionBox.classList.remove('shake'), 500);
+
+        feedbackBox.className = "mt-4 p-4 rounded-2xl text-center font-bold text-base sm:text-lg border-2 bg-purple-50 border-purple-200 text-purple-900 animate-fade-in";
+        feedbackMsg.innerHTML = `
+          <div class="flex items-center justify-center gap-2 text-rose-600 mb-1">
+            <i class="fa-solid fa-face-smile-wink text-2xl"></i>
+            <span>再想想看，你可以的！答案還不完全對喔～</span>
+          </div>
+          <p class="text-xs sm:text-sm text-purple-700 font-medium mt-1">
+            💡 請參考下方<b>「解題小貼士」</b>線索，修改答案後再次補答！
+          </p>
+        `;
+        feedbackBox.classList.remove('hidden');
+        document.getElementById('nextBtn').classList.add('hidden'); // Block progression
+        document.getElementById('retryNotice').classList.remove('hidden');
+        
+        // Auto display hint to help student
+        showHint();
+      }
+    }
+
+    // Show hint
+    function showHint() {
+      playSound('hint');
+      document.getElementById('hintBox').classList.remove('hidden');
+    }
+
+    // Next Question & Check for Level Up Modal
+    function nextQuestion() {
+      currentIndex++;
+      
+      // Check for Level Upgrade triggers (Q6 -> Q7 & Q14 -> Q15)
+      if (currentIndex === 6) {
+        showLevelModal("🚀 升級到【中級：智慧探險家】！", "你已順利通關初級卡關！中級難度將解鎖更多排隊、樹木與幾何推理題！", "🌿");
+      } else if (currentIndex === 14) {
+        showLevelModal("🔥 升級到【高級：奧數大師】！", "太厲害了！你已邁入最高層級考驗，準備挑戰奧數終極大師難題！", "👑");
+      } else if (currentIndex < questions.length) {
+        loadQuestion();
+      } else {
+        showVictoryScreen();
+      }
+    }
+
+    // Show Level Modal
+    function showLevelModal(title, desc, emoji) {
+      playSound('levelup');
+      confetti({ particleCount: 70, spread: 80, origin: { y: 0.5 } });
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalDesc').innerText = desc;
+      document.getElementById('modalEmoji').innerText = emoji;
+      document.getElementById('levelModal').classList.remove('hidden');
+    }
+
+    function closeLevelModal() {
+      document.getElementById('levelModal').classList.add('hidden');
+      loadQuestion();
+    }
+
+    // Victory Screen
+    function showVictoryScreen() {
+      playSound('levelup');
+      document.getElementById('quizContainer').classList.add('hidden');
+      document.getElementById('victoryScreen').classList.remove('hidden');
+      document.getElementById('finalScore').innerText = score;
+
+      let title = "🏅 榮獲：奧數大師";
+      if (score >= 180) {
+        title = "👑 榮獲：奧數小神童 🌟";
+      } else if (score >= 140) {
+        title = "🥇 榮獲：奧數小宗師 🏆";
+      } else {
+        title = "🥈 榮獲：奧數小勇士 ⭐";
+      }
+      document.getElementById('honorTitle').innerText = title;
+
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.4 }
+      });
+    }
+
+    // Toggle Teacher Mode
+    function toggleTeacherMode() {
+      isTeacherMode = !isTeacherMode;
+      document.getElementById('teacherBtnText').innerText = isTeacherMode ? "關閉專區" : "教師專區";
+      const box = document.getElementById('teacherAnswerBox');
+      if (isTeacherMode) {
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    // Restart Game
+    function restartGame() {
+      initGame();
+    }
+
+    // Enter Key Listener for Input
+    document.getElementById('answerInput').addEventListener('keyup', function(e) {
+      if (e.key === 'Enter') {
+        checkAnswer();
+      }
+    });
+
+    // Start on window load
+    window.onload = initGame;
+  </script>
+</body>
+</html>
